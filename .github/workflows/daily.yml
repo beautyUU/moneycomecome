@@ -1,0 +1,56 @@
+name: 基金日报每日更新
+
+on:
+  schedule:
+    # 周一至周五 15:30 UTC = 北京时间 23:30（基金净值通常已披露）
+    - cron: "30 15 * * 1-5"
+  workflow_dispatch: {}   # 允许在 Actions 页面手动触发
+
+permissions:
+  contents: write          # 用于推送到 gh-pages 分支
+
+concurrency:
+  group: fund-daily
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 配置 Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: 安装依赖
+        run: pip install -r requirements.txt
+
+      - name: 生成日报
+        id: gen
+        run: |
+          python3 daily_report.py
+          if [ -f reports/index.html ]; then
+            echo "has_report=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_report=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: 准备发布目录
+        if: steps.gen.outputs.has_report == 'true'
+        run: |
+          mkdir -p publish
+          cp reports/index.html publish/index.html
+          touch publish/.nojekyll
+
+      - name: 部署到 GitHub Pages
+        if: steps.gen.outputs.has_report == 'true'
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./publish
+          publish_branch: gh-pages
+          force_orphan: true
+          commit_message: "chore: 每日自动更新基金日报 ${{ github.run_id }}"
