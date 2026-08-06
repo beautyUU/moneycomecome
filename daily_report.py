@@ -115,15 +115,6 @@ def main():
     os.makedirs(hist_dir, exist_ok=True)
     json.dump(snap, open(os.path.join(hist_dir, f"{date}.json"), "w",
                          encoding="utf-8"), ensure_ascii=False, indent=1)
-    if fdata:
-        snap["portfolio"] = fdata["portfolio"]
-        snap["funds"] = [{"code": f["code"], "name": f["name"], "nav": f["nav"],
-                          "chg": f["chg"], "mv": f["mv"], "pnl": f["pnl"],
-                          "pnl_pct": f["pnl_pct"]} for f in fdata["funds"]]
-    hist_dir = os.path.join(DATA_DIR, "history")
-    os.makedirs(hist_dir, exist_ok=True)
-    json.dump(snap, open(os.path.join(hist_dir, f"{date}.json"), "w",
-                         encoding="utf-8"), ensure_ascii=False, indent=1)
 
     size = os.path.getsize(out) / 1024
     log(f"✓ 完成 → {out}  ({size:.0f} KB, 用时 {time.time()-t0:.0f}s)")
